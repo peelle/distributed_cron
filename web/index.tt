@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Distributed Cron Basic Web Interface.</title>
+<script src="/home/3rdparty/jquery-1.12.4.min.js"></script>
+<style>
+
+th {
+        background: #AAA;
+}
+
+tr:nth-child(even) td:nth-child(even) {
+        background: #DCD;
+}
+
+tr:nth-child(odd) td:nth-child(odd) {
+        background: #CDC;
+}
+
+td {
+        border-right: double #AAA 2px;
+}
+
+#content {
+        width: 90%;
+        margin: 0 auto;
+        border: 1px solid black;
+}
+
+div.#search_filter {
+        font-weight: bold;
+}
+
+</style>
+</head>
+<body>
+<div id=page>
+<div id=content>
+        <div id="search_filter">
+               <form style='display:inline'>
+               <label for="search_string">Search: </label>
+               <input name="search_string" id="search_string">
+               <input type=submit value="Filter List" >
+               </form>
+               <button name="reset_button" id="reset_button" onClick="reset_results()">Reset</button>
+               <a href="#TODO_CRUD">Add New Jobs</a>
+        </div>
+<div id="totals">
+        <table id="totals">
+        <thead>
+                <tr>
+                        <th>Running</th>
+                        <th>Overdue</th>
+                        <th>Not Due</th>
+                        <th>Disabled</th>
+                        <th>Error</th>
+                </tr>
+        </thead>
+        <tbody>
+                <tr>
+                        <td onclick='$("#search_string").val("Running"); filter_results();'>[% running_count %]</td>
+                        <td onclick='$("#search_string").val("Overdue"); filter_results();'>[% overdue_count %]</td>
+                        <td onclick='$("#search_string").val("Last Run"); filter_results();'>[% waiting_count %]</td>
+                        <td onclick='$("#search_string").val("Disabled"); filter_results();'>[% disabled_count %]</td>
+                        <td onclick='$("#search_string").val("ERROR"); filter_results();'>[% error_count %]</td>
+                </tr>
+        <tbody>
+        </table>
+</div>
+<table id="jobs">
+<thead><tr>
+        <th>Job ID</th>
+        <th>Job Description</th>
+        <th>Command</th>
+        <th>Active</th>
+        <th>Starts</th>
+        <th>Stops</th>
+        <th>Frequency</th>
+        <th>Max Run Time</th>
+        <th>Last Started</th>
+        <th>Last Stopped</th>
+        <th>Last Run</th>
+        <th>Worker</th>
+        <th>Curent Status</th>
+        <th>Minutes</th>
+        <th>Delete</th>
+</tr></thead>
+<tbody>
+[% FOREACH job IN job_list %]
+        [% IF job.3 == 1 %] 
+                [% job.3 = "Active" %]
+        [% ELSE %] 
+                [% job.3 = "Disabled" %]
+        [% END %]
+        [% job.push("<a target='_top'  href='#TODO_DELETE_CRUD" _ job.0 _ "'>Delete</a>") %]
+        [% job.10 = "<a target='_top' href='grab_log.cgi?" _ job.0 _ "'>" _ job.10 _ "</a>" %]
+        [% job.0 = "<a target='_top' href='#TODO_UPDATE_CRUD" _ job.0 _ "'>" _ job.0 _ "</a>" %]
+        [% IF job.1.length > 60 %]
+                [% job.1 = job.1.substr(0, 60) _ "..." %]
+        [% END %]
+        [% IF job.2.length > 60 %]
+                [% job.2 = job.2.substr(0, 60) _ "..."  %]
+        [% END %]
+        <tr><td>[% job.join('</td><td>') %]</td></tr>
+[% END %]
+</tbody>
+</table>
+<div id="output_div">
+<textarea name="log" id="log_textarea" rows="12" cols="200" wrap="soft"></textarea>
+
+</div>
+</div>
+</div>
+<script>
+function filter_results() {
+        $('#jobs tbody tr').hide();
+        $('#jobs tbody tr').filter(":contains('" + $("#search_string").val() + "')").show();
+}
+
+function reset_results() {
+        $("#search_string").val("");
+        $('#jobs tbody tr').show();
+}
+
+$('th').click(function(){
+        var table = $(this).parents('table').eq(0)
+        var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()))
+        this.asc = !this.asc
+        if (!this.asc) {
+                rows = rows.reverse()
+        }
+        for (var i = 0; i < rows.length; i++) {
+                table.append(rows[i])
+        }
+})
+
+[% # Below is a copy and paste for table sorting.  http://stackoverflow.com/questions/3160277/jquery-table-sort %]
+function comparer(index) {
+    return function(a, b) {
+        var valA = getCellValue(a, index), valB = getCellValue(b, index)
+        return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB)
+    }
+}
+
+function getCellValue(row, index) { 
+        return $(row).children('td').eq(index).html() 
+}
+
+$('td:nth-child(-2)').text('test');
+
+// ////
+// For log update
+
+setInterval( function () {
+        $.get('./grab_log.cgi', function ( data ) {
+                $('#log_textarea').text( data );
+        });
+       
+}, 750);
+
+// /////
+// For filtering on page load.
+
+$( document ).ready(function() {
+                if ( "[% search_string %]" ) {
+                        $("#search_string").val("[% search_string %]");
+                        filter_results();
+                }
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+---
+db:
+	connect_string: dbi:mysql:database=distributed_cron;host=mysql_host;mysql_read_timeout=2
+	username: username
+	password: password
+log:
+	location: /tmp/distributed_cron # easy to use on my local box.
+max_tasks: 60 # Supports an int, and cpu_full, cpu_half, cpu_quarter (#cpus/X).
+clear_old_on_start: yes # Supports yes or no. Only clears crons last ran by that box.
